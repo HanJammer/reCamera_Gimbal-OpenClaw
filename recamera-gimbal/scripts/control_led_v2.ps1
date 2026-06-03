@@ -1,17 +1,17 @@
 param (
     [string]$Action
 )
-$RecameraIp = "192.168.31.198"
-$RecameraPass = "recamera.1"
+$RecameraIp = if ($env:RECAMERA_IP) { $env:RECAMERA_IP } else { "192.168.16.1" }
+$RecameraPass = if ($env:RECAMERA_PASS) { $env:RECAMERA_PASS } else { "recamera" }
 
 if (-not $RecameraIp -or -not $RecameraPass) {
-    Write-Error "环境变量缺失"
+    Write-Error "Missing environment variables"
     exit 1
 }
 
-$Val = if ($Action -eq "on") { 1 } elseif ($Action -eq "off") { 0 } else { throw "参数错误，只能是 on 或 off" }
+$Val = if ($Action -eq "on") { 1 } elseif ($Action -eq "off") { 0 } else { throw "Invalid argument, must be 'on' or 'off'" }
 
-# 创建一个临时脚本文件来包含密码和命令
+# Create a temporary script file that carries the password and command
 $tempFile = [System.IO.Path]::GetTempFileName()
 $tempScript = @"
 #!/bin/bash
@@ -19,11 +19,11 @@ echo '$RecameraPass' | sudo -S sh -c 'echo $Val > /sys/class/leds/white/brightne
 "@
 $tempScript | Out-File -FilePath $tempFile -Encoding ASCII
 
-# 使用SCP将临时脚本复制到远程主机
+# Copy the temporary script to the remote host with SCP
 scp -o StrictHostKeyChecking=no $tempFile recamera@$RecameraIp:/tmp/control_led.sh
 
-# 执行远程脚本
+# Execute the remote script
 ssh -o StrictHostKeyChecking=no recamera@$RecameraIp "chmod +x /tmp/control_led.sh && /tmp/control_led.sh"
 
-# 清理临时文件
+# Clean up the temporary file
 Remove-Item $tempFile

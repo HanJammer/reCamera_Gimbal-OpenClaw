@@ -1,5 +1,8 @@
+# Capture the latest frame from the reCamera Gimbal and save it locally.
+# RECAMERA_IP is read from the environment (set in openclaw.json); the literal
+# value is only a fallback for standalone use.
+$RecameraIp = if ($env:RECAMERA_IP) { $env:RECAMERA_IP } else { "192.168.16.1" }
 $OutFile = "C:\Users\seeed\.openclaw\workspace\latest_photo.jpg"
-$RecameraIp = "192.168.31.198"
 
 Write-Output "Fetching latest frame from camera..."
 try {

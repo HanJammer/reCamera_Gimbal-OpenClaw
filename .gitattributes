@@ -1,0 +1,5 @@
+# Shell scripts must use LF endings so they run on the Linux host / device.
+*.sh text eol=lf
+
+# PowerShell scripts use CRLF on Windows.
+*.ps1 text eol=crlf

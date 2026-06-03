@@ -1,8 +1,8 @@
 param (
     [string]$Action
 )
-$RecameraIp = "192.168.31.198"
-$RecameraPass = "recamera.1"
+$RecameraIp = if ($env:RECAMERA_IP) { $env:RECAMERA_IP } else { "192.168.16.1" }
+$RecameraPass = if ($env:RECAMERA_PASS) { $env:RECAMERA_PASS } else { "recamera" }
 
 if ($Action -eq "on") { 
     $Val = 1 
