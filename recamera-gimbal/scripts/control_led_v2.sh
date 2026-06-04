@@ -29,7 +29,7 @@ echo '${RECAMERA_PASS}' | sudo -S sh -c 'echo $VAL > /sys/class/leds/white/brigh
 EOF
 
 # Copy the temporary script to the remote host with SCP
-scp -o StrictHostKeyChecking=no "$TMP_FILE" "recamera@${RECAMERA_IP}:/tmp/control_led.sh"
+scp -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=5 "$TMP_FILE" "recamera@${RECAMERA_IP}:/tmp/control_led.sh"
 
 # Execute the remote script
-ssh -o StrictHostKeyChecking=no "recamera@${RECAMERA_IP}" "chmod +x /tmp/control_led.sh && /tmp/control_led.sh"
+ssh -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=5 "recamera@${RECAMERA_IP}" "chmod +x /tmp/control_led.sh && /tmp/control_led.sh"

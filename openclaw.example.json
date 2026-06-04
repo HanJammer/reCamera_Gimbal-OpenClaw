@@ -1,0 +1,19 @@
+{
+  "_comment": "Example fragment for your real openclaw.json. Copy the 'skills' block into your config and replace every <...> placeholder. Do NOT commit your real values. 'load.extraDirs' is OPTIONAL: include it only if the skill lives outside the default ~/.openclaw/workspace/skills folder; otherwise delete the whole 'load' block.",
+  "skills": {
+    "load": {
+      "extraDirs": [
+        "<PATH_TO_YOUR_SKILLS_DIR>"
+      ]
+    },
+    "entries": {
+      "recamera-gimbal": {
+        "enabled": true,
+        "env": {
+          "RECAMERA_IP": "<YOUR_RECAMERA_IP>",
+          "RECAMERA_PASS": "<YOUR_RECAMERA_SUDO_PASSWORD>"
+        }
+      }
+    }
+  }
+}

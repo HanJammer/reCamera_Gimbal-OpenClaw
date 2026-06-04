@@ -13,4 +13,4 @@ if ($Action -eq "on") {
     exit 1 
 }
 
-ssh -o StrictHostKeyChecking=no recamera@$RecameraIp "echo '$RecameraPass' | sudo -S sh -c 'echo $Val > /sys/class/leds/white/brightness'"
+ssh -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=5 recamera@$RecameraIp "echo '$RecameraPass' | sudo -S sh -c 'echo $Val > /sys/class/leds/white/brightness'"

@@ -4,6 +4,46 @@ All notable changes to this fork are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Baseline is the upstream Seeed release (skill `version: 1.2`).
 
+## [2.1] - 2026-06-04
+
+Hardening pass driven by real-world OpenClaw agent testing of the 2.0 skill.
+Focus: stop the agent from hanging on SSH, give it a bounded way to repair its
+own access, and tighten the docs/config hygiene.
+
+### Added
+- **"SSH Bootstrap For LED/Audio" section in `SKILL.md`** — a precise, bounded
+  procedure the runtime agent can follow to self-repair passwordless SSH when
+  `RECAMERA_PASS` is present (test → keygen → `known_hosts` → install key →
+  scoped `sudo` repair of `/home/recamera/.ssh` → re-verify), with explicit
+  secret-handling safety rules and a matching exception in the operating rules.
+- **`openclaw.example.json`** — a placeholder config fragment to copy into your
+  real `openclaw.json`, so the README is no longer the only config source.
+- **Security section** in `README.md` (don't commit real secrets, use
+  placeholders).
+- **Minimal photo smoke test** + real `curl` commands in the "Verify" step
+  (replacing bare URLs that looked pasteable but were not commands), and a
+  "Transport at a glance" table making the HTTP-vs-SSH split explicit.
+
+### Changed
+- **SSH/SCP calls in all scripts now pass `-o BatchMode=yes -o ConnectTimeout=5`**
+  so they fail fast instead of hanging on a host-key / password / `sudo` prompt
+  (a real failure mode seen in agent testing).
+- **Expanded the `SKILL.md` SSH section** from the 2.0 "First-Time Setup" note
+  into the full "SSH Bootstrap For LED/Audio" procedure (see Added).
+- **Config docs clarified:** `skills.load.extraDirs` is optional — needed only
+  when the skill lives outside the default `~/.openclaw/workspace/skills` folder;
+  per-skill `env` always goes through `skills.entries.recamera-gimbal.env`.
+- **README "Policy" now separates runtime-agent policy from maintainer access:**
+  the "do not read/edit `scripts/`" rule constrains the executing agent, not
+  maintainers.
+- **Documented `control_led_v2` as a developer fallback** (scp + remote script)
+  in both `README.md` and `SKILL.md`, so it is not mistaken for the default.
+- **Normalized `README.md` whitespace** — removed the stray non-breaking spaces
+  (`U+00A0`) in lists/tables that produced noisy diffs and rendering quirks.
+- Kept the Seeed wiki link as-is (the `cpenclaw` slug is a real, working Seeed
+  URL — verified; `openclaw` 404s) and documented that with a note.
+- Skill `version` 2.0 → 2.1.
+
 ## [2.0] - 2026-06-03
 
 This is the first release of the **HanJammer fork** of Seeed's

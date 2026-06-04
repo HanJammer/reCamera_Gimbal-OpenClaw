@@ -4,39 +4,56 @@
 
 > Use OpenClaw to control the motor, camera, LED, microphone, and speaker of a reCamera Gimbal.
 
-Wiki Link:https://wiki.seeedstudio.com/use_cpenclaw_to_control_the_recamera_gimbal/
+Wiki Link: https://wiki.seeedstudio.com/use_cpenclaw_to_control_the_recamera_gimbal/
+
+> [!NOTE]
+> The `cpenclaw` in the wiki URL above is a typo on Seeed's side, but it is the **real, working** address — do not "correct" it to `openclaw`, which 404s.
+
 ## What This Is
 
 This project provides an **OpenClaw Skill + Node-RED flow** for controlling a **reCamera Gimbal edge AI camera**.
 
 It enables:
 
-  * Motor (yaw/pitch) control via HTTP API
-  * Image capture and retrieval
-  * LED control
-  * Audio recording and playback
-  * Vision-based interaction via OpenClaw
+- Motor (yaw/pitch) control via HTTP API
+- Image capture and retrieval
+- LED control
+- Audio recording and playback
+- Vision-based interaction via OpenClaw
 
 **Role in OpenClaw:** Skill (with external Node-RED runtime integration)
+
+### Transport at a glance
+
+Two different transports are used, and this matters for setup and debugging:
+
+| Capability | Transport | Needs SSH key? |
+| ---------- | --------- | -------------- |
+| Photo capture (`/api/photo`) | HTTP to Node-RED | No |
+| Gimbal control (`/api/gimbal`) | HTTP to Node-RED | No |
+| LED on/off | SSH + `sudo` on device | **Yes** |
+| Audio record/play | SSH + `sudo` on device | **Yes** |
+
+So if photo/gimbal work but LED/audio hang, it is almost always an SSH-key problem, not a network problem. See [SSH Key Setup](#ssh-key-setup-required-for-ledaudio).
 
 -----
 
 ## Prerequisites
 
-> [\!IMPORTANT]
+> [!IMPORTANT]
 > You need the following components (derived from project files):
 
-  * A **reCamera Gimbal device** (RISC-V edge AI camera)
-  * **Node-RED** running on the device (port `1880`)
-  * **OpenClaw** environment with `Exec` tool enabled
-  * Network access to the device (local IP like `192.168.16.xxx`)
-  * A host to run the skill scripts: **Windows** (PowerShell + `ssh.exe`) or **Linux** (Bash + OpenSSH client + `curl`)
+- A **reCamera Gimbal device** (RISC-V edge AI camera)
+- **Node-RED** running on the device (port `1880`)
+- **OpenClaw** environment with `Exec` tool enabled
+- Network access to the device (local IP like `192.168.16.xxx`, or the camera hotspot default `192.168.16.1`)
+- A host to run the skill scripts: **Windows** (PowerShell + `ssh.exe`) or **Linux** (Bash + OpenSSH client + `curl`)
 
 -----
 
 ## Quick Start
 
-### 1\. Import Node-RED Flow
+### 1. Import Node-RED Flow
 
 Import the provided file into Node-RED:
 
@@ -46,12 +63,12 @@ openclaw_V2.json
 
 This creates two HTTP endpoints:
 
-  * Control gimbal: `http://<DEVICE_IP>:1880/api/gimbal?yaw=90&pitch=45`
-  * Capture photo: `http://<DEVICE_IP>:1880/api/photo`
+- Control gimbal: `http://<DEVICE_IP>:1880/api/gimbal?yaw=90&pitch=45`
+- Capture photo: `http://<DEVICE_IP>:1880/api/photo`
 
 -----
 
-### 2\. Install Skill into OpenClaw
+### 2. Install Skill into OpenClaw
 
 Copy the skill folder `recamera-gimbal/` into your OpenClaw workspace:
 
@@ -65,46 +82,40 @@ C:\Users\<you>\.openclaw\workspace\skills\recamera-gimbal\
 
 -----
 
-### 3\. Configure openclaw.json
+### 3. Configure openclaw.json
 
-The `openclaw.json` file is located in your OpenClaw installation directory. This file contains all the configuration settings for connecting to AI models. You need to add the following configuration for the reCamera Gimbal into `openclaw.json`:
+The `openclaw.json` file lives in your OpenClaw installation directory and holds the app configuration. Add an entry for this skill so OpenClaw exports the device IP and password to the scripts.
 
-> [\!NOTE]
->
->   * Replace the `extraDirs` path with the actual path to your skills folder (see Windows vs. Linux below).
->   * Replace `"192.168.16.1"` with the actual IP address of your reCamera Gimbal.
->   * Replace `"recamera"` with the actual **sudo** password of your reCamera Gimbal.
+> [!NOTE]
+> A ready-to-edit fragment with placeholders is provided in [`openclaw.example.json`](openclaw.example.json). Copy the relevant block into your real `openclaw.json` and fill in your values.
 
-The `RECAMERA_IP` and `RECAMERA_PASS` values set here are exported to the skill scripts as environment variables. The bundled scripts read those variables first and only fall back to their built-in defaults — so `openclaw.json` is the single source of truth, and you do **not** need to edit the scripts.
+#### Minimal config (skill in the default workspace folder)
 
-**Windows host** (`.ps1` scripts):
+If you copied the skill into the **default** workspace skills folder (`~/.openclaw/workspace/skills/`), OpenClaw auto-discovers it — you do **not** need `skills.load.extraDirs`. You only need the per-skill `env`:
 
 ```json
 "skills": {
-  "load": {
-    "extraDirs": [
-      "C:\\Users\\seeed\\.openclaw\\workspace\\skills"
-    ]
-  },
-  "entries": {
-    "recamera-gimbal": {
-      "enabled": true,
-      "env": {
-        "RECAMERA_IP": "192.168.16.1",
-        "RECAMERA_PASS": "recamera"
-      }
-    }
-  }
+  "entries": {
+    "recamera-gimbal": {
+      "enabled": true,
+      "env": {
+        "RECAMERA_IP": "192.168.16.1",
+        "RECAMERA_PASS": "recamera"
+      }
+    }
+  }
 }
 ```
 
-**Linux host** (`.sh` scripts):
+#### Custom skills directory (optional)
+
+Only if your skills live somewhere **other** than the default workspace folder, add `skills.load.extraDirs` pointing at that directory. Use the path format for your host — Windows: `"C:\\Users\\<you>\\.openclaw\\workspace\\skills"`, Linux: `"/home/<you>/.openclaw/workspace/skills"`:
 
 ```json
 "skills": {
   "load": {
     "extraDirs": [
-      "/home/youruser/.openclaw/workspace/skills"
+      "C:\\Users\\<you>\\.openclaw\\workspace\\skills"
     ]
   },
   "entries": {
@@ -119,8 +130,12 @@ The `RECAMERA_IP` and `RECAMERA_PASS` values set here are exported to the skill 
 }
 ```
 
-> [\!TIP]
->
+> [!NOTE]
+> - Replace `"192.168.16.1"` with the actual IP of your reCamera Gimbal.
+> - Replace `"recamera"` with the actual **sudo** password of your device.
+> - The `RECAMERA_IP` / `RECAMERA_PASS` values are exported to the scripts as environment variables. The scripts read those first and only fall back to built-in defaults, so `openclaw.json` is the single source of truth — you do **not** need to edit the scripts.
+
+> [!TIP]
 > On Linux, make the shell scripts executable once after copying them:
 >
 > ```bash
@@ -135,7 +150,7 @@ The `RECAMERA_IP` and `RECAMERA_PASS` values set here are exported to the skill 
 
 The LED and audio scripts log in to the device over SSH **using a key** (they never pass a login password — the value in `RECAMERA_PASS` is only piped to `sudo -S` on the device). So before they work you must install your public key on the camera **once**.
 
-> [\!NOTE]
+> [!NOTE]
 > The device ships with login user `recamera` and the default password `recamera` (you are prompted to change it on first login). That password is what authorizes the one-time key import below; after that, logins are passwordless.
 
 **Generate a key** (skip if you already have one at `~/.ssh/id_ed25519`):
@@ -159,33 +174,44 @@ ssh recamera@192.168.16.1 "mkdir -p ~/.ssh && echo '$pub' >> ~/.ssh/authorized_k
 
 You can also paste the public key into the reCamera web dashboard if it exposes an "SSH keys" / "authorized keys" field.
 
-> [\!TIP]
-> This is a great task to hand to the OpenClaw agent itself: ask it to *"generate an SSH keypair and install the public key on the reCamera at 192.168.16.1 (user recamera)"*. It will run `ssh-keygen` and one of the install commands above, entering the default password once. After that the LED/audio skills work hands-free. (I set this up with an OpenClaw agent and it works without issues.)
+> [!TIP]
+> This is a great task to hand to the OpenClaw agent itself: ask it to *"generate an SSH keypair and install the public key on the reCamera at 192.168.16.1 (user recamera)"*. With `RECAMERA_PASS` present in the skill environment, the agent can run the bootstrap described in `SKILL.md` ("SSH Bootstrap For LED/Audio"), entering the password once. After that the LED/audio skills work hands-free. (Set up this way with an OpenClaw agent and it works without issues.)
 
-Verify passwordless login:
+**Verify passwordless login** (this exact test is also what the scripts rely on):
 
 ```bash
-ssh recamera@192.168.16.1 "echo ok"   # should print "ok" without asking for a password
+ssh -o BatchMode=yes -o ConnectTimeout=5 recamera@192.168.16.1 "echo ok"   # prints "ok", no password prompt
 ```
+
+`BatchMode=yes` makes the test fail fast instead of hanging on a password prompt if the key is not yet installed.
 
 -----
 
-### 4\. Verify
+### 4. Verify
 
-Test APIs manually:
+Photo and gimbal go over **HTTP** (no SSH needed) — test them first, they are the simplest signal that the device and Node-RED flow are alive:
 
 ```bash
-# Move gimbal
-http://<DEVICE_IP>:1880/api/gimbal?yaw=120&pitch=90
+# Move gimbal (real command, run it as-is)
+curl -fsS "http://<DEVICE_IP>:1880/api/gimbal?yaw=120&pitch=90"
 
-# Get image
-http://<DEVICE_IP>:1880/api/photo
+# Minimal photo smoke test: fetch a frame and confirm it is a real JPEG
+curl -fsS -H "Cache-Control: no-cache" "http://<DEVICE_IP>:1880/api/photo" -o latest_photo.jpg && file latest_photo.jpg
 ```
 
-If successful:
+Expected:
 
-  * Gimbal moves
-  * Image returns as JPEG
+- Gimbal physically moves.
+- `latest_photo.jpg` is written and `file` reports something like `JPEG image data, ... 1280x720` (resolution depends on the model/flow).
+
+Only after HTTP works should you test the SSH-based features:
+
+```bash
+# LED (needs the SSH key from the step above)
+bash recamera-gimbal/scripts/control_led.sh on
+```
+
+If LED/audio hang here while photo/gimbal worked, go to [Troubleshooting](#troubleshooting) → "LED/audio command hangs".
 
 -----
 
@@ -195,10 +221,10 @@ If successful:
 
 From Node-RED flow:
 
-| Field | Type   | Default | Range   |
+| Field | Type   | Default | Range   |
 | ----- | ------ | ------- | ------- |
-| yaw   | number | 180     | 1 – 345 |
-| pitch | number | 90      | 1 – 175 |
+| yaw   | number | 180     | 1 – 345 |
+| pitch | number | 90      | 1 – 175 |
 
 Example:
 
@@ -210,14 +236,14 @@ Example:
 
 ### Skill Script Paths
 
-From `SKILL.md`. Each script ships in two flavors — `.ps1` for a Windows host and `.sh` for a Linux host:
+Each script ships in two flavors — `.ps1` for a Windows host and `.sh` for a Linux host:
 
 ```powershell
 # LED control (Windows)
 scripts/control_led.ps1 -Action on|off
 
 # Photo capture (via HTTP)
-http://<DEVICE_IP>:1880/api/photo
+curl.exe -fsS -H "Cache-Control: no-cache" "http://<DEVICE_IP>:1880/api/photo" -o latest_photo.jpg
 ```
 
 ```bash
@@ -229,8 +255,20 @@ bash scripts/record_audio.sh 5
 bash scripts/play_audio.sh
 
 # Photo capture (via HTTP)
-http://<DEVICE_IP>:1880/api/photo
+curl -fsS -H "Cache-Control: no-cache" "http://<DEVICE_IP>:1880/api/photo" -o latest_photo.jpg
 ```
+
+> [!NOTE]
+> `control_led_v2.{ps1,sh}` is a **developer fallback** that copies a temp script to the device with `scp` and runs it there, instead of sending an inline command. Use it only if inline `sudo -S` over SSH misbehaves on your firmware. For normal use, `control_led` is the one to call (and the only LED script referenced by `SKILL.md`).
+
+-----
+
+## Security
+
+- **Never commit a real `RECAMERA_PASS`.** Keep secrets in your own `openclaw.json`, which is not part of this repo.
+- The defaults in the scripts (`192.168.16.1`, `recamera`) are the **public factory defaults** for the camera hotspot, used only as a fallback. Treat them as placeholders, not as a working credential to copy elsewhere.
+- Don't paste a private LAN IP or a changed password into examples, issues, or commits — use placeholders like `<DEVICE_IP>` / `<YOUR_PASSWORD>`.
+- The `env` block in `openclaw.json` is the intended place for your real values; see [`openclaw.example.json`](openclaw.example.json).
 
 -----
 
@@ -238,35 +276,35 @@ http://<DEVICE_IP>:1880/api/photo
 
 ```mermaid
 graph TD
-    Camera[Camera] --> Model[YOLO Detection]
-    Model --> SaveImage[Save Image]
-    Model --> Preview[Preview Rendering]
+    Camera[Camera] --> Model[YOLO Detection]
+    Model --> SaveImage[Save Image]
+    Model --> Preview[Preview Rendering]
 
-    HTTP_Gimbal[/api/gimbal/] --> Parser[Parameter Parsing]
-    Parser --> Motor[Motor Control]
+    HTTP_Gimbal[/api/gimbal/] --> Parser[Parameter Parsing]
+    Parser --> Motor[Motor Control]
 
-    HTTP_Photo[/api/photo/] --> ServePhoto[Return Photo]
+    HTTP_Photo[/api/photo/] --> ServePhoto[Return Photo]
 
-    SaveImage --> Global[(Global Cache)]
-    Global --> ServePhoto
+    SaveImage --> Global[(Global Cache)]
+    Global --> ServePhoto
 ```
 
 ### Flow Summary
 
-  * Camera captures frames
-  * YOLO model processes detections
-  * Latest image stored globally
-  * HTTP endpoints expose motor control and image retrieval
+- Camera captures frames
+- YOLO model processes detections
+- Latest image stored globally
+- HTTP endpoints expose motor control and image retrieval
 
 -----
 
 ## Features
 
-  * **Gimbal Control**: Control yaw and pitch via HTTP API.
-  * **Live Image Capture**: Retrieve latest frame as JPEG.
-  * **Vision Integration**: YOLO-based object detection pipeline.
-  * **LED Control**: Turn light on/off via PowerShell (`.ps1`) or shell (`.sh`) scripts over SSH.
-  * **Audio I/O**: Record and play audio via scripts.
+- **Gimbal Control**: Control yaw and pitch via HTTP API.
+- **Live Image Capture**: Retrieve latest frame as JPEG.
+- **Vision Integration**: YOLO-based object detection pipeline.
+- **LED Control**: Turn light on/off via PowerShell (`.ps1`) or shell (`.sh`) scripts over SSH.
+- **Audio I/O**: Record and play audio via scripts.
 
 -----
 
@@ -274,24 +312,27 @@ graph TD
 
 From `SKILL.md`:
 
-| Capability     | Trigger                     | Action                           |
-| -------------- | --------------------------- | -------------------------------- |
-| Vision capture | “look”, “see”, “take photo” | Call `/api/photo`, analyze image |
-| Gimbal control | directional commands        | Call `/api/gimbal`                |
-| LED control    | “turn on/off light”         | Run control_led script (.ps1/.sh)            |
-| Audio          | “record/play”               | Run script                       |
+| Capability     | Trigger                       | Action                              |
+| -------------- | ----------------------------- | ----------------------------------- |
+| Vision capture | "look", "see", "take photo"   | Call `/api/photo`, analyze image    |
+| Gimbal control | directional commands          | Call `/api/gimbal`                  |
+| LED control    | "turn on/off light"           | Run `control_led` script (.ps1/.sh) |
+| Audio          | "record/play"                 | Run audio script                    |
 
 -----
 
 ## Policy
 
-From `SKILL.md`:
+> [!IMPORTANT]
+> These rules are an **agent runtime policy** — they constrain the executing OpenClaw agent at runtime. They are **not** a restriction on maintainers (e.g. Claude Code or you): maintaining this repo necessarily means reading and editing the scripts.
 
-| Rule                | Description                                 |
-| ------------------- | ------------------------------------------- |
-| No file inspection  | Do not read/edit `scripts/`                 |
-| Exec only           | Only use predefined commands                |
-| Fixed output format | Must return image in strict markdown format |
+From `SKILL.md` (runtime agent):
+
+| Rule                | Description                                                  |
+| ------------------- | ------------------------------------------------------------ |
+| No file inspection  | The runtime agent must not read/edit `scripts/`              |
+| Exec only           | Use only the predefined commands (plus the SSH bootstrap)    |
+| Fixed output format | Must return the image in the strict markdown format          |
 
 -----
 
@@ -299,40 +340,53 @@ From `SKILL.md`:
 
 **Gimbal does not move**
 
-  * Check Node-RED is running on port `1880`
-  * Verify device IP
-  * Ensure CAN/motor nodes are connected
+- Check Node-RED is running on port `1880`
+- Verify device IP
+- Ensure CAN/motor nodes are connected
 
 **No image returned**
 
-  * Ensure model node has debug enabled
-  * Check global variable `latest_image` is set
+- Ensure model node has debug enabled
+- Check global variable `latest_image` is set
+
+**LED/audio command hangs with no output**
+
+- This is the classic symptom: the script is blocked on an SSH prompt (host key, password, or `sudo`), waiting for input that never comes.
+- Test passwordless login first — this is safe and returns immediately:
+
+  ```bash
+  ssh -o BatchMode=yes -o ConnectTimeout=5 recamera@<DEVICE_IP> "echo ok"
+  ```
+
+  - Prints `ok` → SSH is fine; the problem is elsewhere.
+  - `Permission denied (publickey)` → your key is not installed; do the [SSH Key Setup](#ssh-key-setup-required-for-ledaudio).
+  - Hangs / times out → host unreachable, or host-key prompt; check the IP and network.
+- The bundled scripts pass `-o BatchMode=yes -o ConnectTimeout=5`, so they now **fail fast** instead of hanging — but a stale `~/.ssh/known_hosts` entry can still block them; remove it with `ssh-keygen -R <DEVICE_IP>`.
 
 **PowerShell scripts fail (Windows)**
 
-  * Run with: `  -ExecutionPolicy Bypass `
+- Run with: `-ExecutionPolicy Bypass`
 
 **Shell scripts fail (Linux)**
 
-  * Make them executable: `chmod +x scripts/*.sh`
-  * LED/audio commands need passwordless SSH login to the device — see [SSH Key Setup](#ssh-key-setup-required-for-ledaudio) below
-  * `Permission denied (publickey,password)` means your key is not yet installed on the device — re-run the key setup
+- Make them executable: `chmod +x scripts/*.sh`
+- LED/audio commands need passwordless SSH login to the device — see [SSH Key Setup](#ssh-key-setup-required-for-ledaudio)
 
 **HTTP API not reachable**
 
-  * Check firewall/network
-  * Confirm Node-RED flow is deployed
+- Check firewall/network
+- Confirm Node-RED flow is deployed
 
 -----
 
 ## Changelog
 
-This is the **2.0** release (HanJammer fork of Seeed's `1.2`): cross-platform Windows + Linux scripts, English-only docs, env-driven config, SSH-key setup, and bug fixes. See [CHANGELOG.md](CHANGELOG.md) for the full list.
+Current release: **2.1** (HanJammer fork of Seeed's `1.2`). 2.0 brought cross-platform Windows + Linux scripts, English-only docs, env-driven config, SSH-key setup, and bug fixes; 2.1 hardens it from real agent testing (SSH bootstrap/self-repair, fail-fast SSH timeouts, smoke test, security & config-hygiene docs). See [CHANGELOG.md](CHANGELOG.md) for the full list.
 
 -----
 
 ## Links
 
-  * OpenClaw Skill Spec: [https://agentskills.io/specification\#allowed-tools-field](https://agentskills.io/specification#allowed-tools-field)
+- OpenClaw Skill Spec: [https://agentskills.io/specification#allowed-tools-field](https://agentskills.io/specification#allowed-tools-field)
 
 -----

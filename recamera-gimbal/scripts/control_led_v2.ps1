@@ -20,10 +20,10 @@ echo '$RecameraPass' | sudo -S sh -c 'echo $Val > /sys/class/leds/white/brightne
 $tempScript | Out-File -FilePath $tempFile -Encoding ASCII
 
 # Copy the temporary script to the remote host with SCP
-scp -o StrictHostKeyChecking=no $tempFile recamera@$RecameraIp:/tmp/control_led.sh
+scp -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=5 $tempFile recamera@$RecameraIp:/tmp/control_led.sh
 
 # Execute the remote script
-ssh -o StrictHostKeyChecking=no recamera@$RecameraIp "chmod +x /tmp/control_led.sh && /tmp/control_led.sh"
+ssh -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=5 recamera@$RecameraIp "chmod +x /tmp/control_led.sh && /tmp/control_led.sh"
 
 # Clean up the temporary file
 Remove-Item $tempFile

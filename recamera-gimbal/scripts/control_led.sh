@@ -16,4 +16,4 @@ else
 fi
 
 # SSH command to control LED
-ssh -o StrictHostKeyChecking=no "recamera@${RECAMERA_IP}" "echo '${RECAMERA_PASS}' | sudo -S sh -c 'echo $VAL > /sys/class/leds/white/brightness'"
+ssh -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=5 "recamera@${RECAMERA_IP}" "echo '${RECAMERA_PASS}' | sudo -S sh -c 'echo $VAL > /sys/class/leds/white/brightness'"
