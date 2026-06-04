@@ -381,7 +381,7 @@ From `SKILL.md` (runtime agent):
 
 ## Changelog
 
-Current release: **2.1** (HanJammer fork of Seeed's `1.2`). 2.0 brought cross-platform Windows + Linux scripts, English-only docs, env-driven config, SSH-key setup, and bug fixes; 2.1 hardens it from real agent testing (SSH bootstrap/self-repair, fail-fast SSH timeouts, smoke test, security & config-hygiene docs). See [CHANGELOG.md](CHANGELOG.md) for the full list.
+Current release: **2.2** (HanJammer fork of Seeed's `1.2`). 2.0 brought cross-platform Windows + Linux scripts, English-only docs, env-driven config, SSH-key setup, and bug fixes; 2.1 hardened it from real agent testing (SSH bootstrap/self-repair, fail-fast SSH timeouts, smoke test, security & config-hygiene docs); 2.2 keeps the agent's workspace clean by writing camera output to a scratch directory instead of the workspace root. See [CHANGELOG.md](CHANGELOG.md) for the full list.
 
 -----
 

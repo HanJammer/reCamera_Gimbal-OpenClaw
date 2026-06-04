@@ -1,0 +1,3 @@
+# Local camera capture artifacts (if scripts/smoke test are run from the repo)
+latest_photo.jpg
+/tmp/

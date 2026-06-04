@@ -2,8 +2,10 @@
 # Capture the latest frame from the reCamera Gimbal and save it locally.
 # RECAMERA_IP is read from the environment (set in openclaw.json); the literal
 # value is only a fallback for standalone use.
+# Output goes to a per-session scratch dir, NOT the workspace root, to avoid clutter.
 RECAMERA_IP="${RECAMERA_IP:-192.168.16.1}"
-OUT_FILE="${RECAMERA_PHOTO:-$HOME/.openclaw/workspace/latest_photo.jpg}"
+SCRATCH_DIR="${RECAMERA_TMPDIR:-$HOME/.openclaw/workspace/tmp/recamera-gimbal}"
+OUT_FILE="${RECAMERA_PHOTO:-$SCRATCH_DIR/latest_photo.jpg}"
 
 mkdir -p "$(dirname "$OUT_FILE")"
 

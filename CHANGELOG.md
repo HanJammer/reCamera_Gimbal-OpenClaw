@@ -4,6 +4,28 @@ All notable changes to this fork are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Baseline is the upstream Seeed release (skill `version: 1.2`).
 
+## [2.2] - 2026-06-04
+
+Keep the agent's workspace clean. In testing, camera output (photos, sweep
+captures, JSON, audio) was landing in the workspace root and cluttering it.
+
+### Added
+- **"Workspace Artifacts" section in `SKILL.md`** — instructs the runtime agent
+  to write photos, sweep captures, JSON responses, and audio into a per-session
+  scratch directory, never the workspace root.
+- **`.gitignore`** for stray local capture artifacts (e.g. `latest_photo.jpg`),
+  in case the smoke test or scripts are run from inside the repo.
+
+### Changed
+- **Photo capture now writes to a scratch directory** instead of the workspace
+  root: `~/.openclaw/workspace/tmp/recamera-gimbal/` (Linux) /
+  `%USERPROFILE%\.openclaw\workspace\tmp\recamera-gimbal\` (Windows). Updated in
+  `SKILL.md` (Step 1/2) and in `capture_photo.{ps1,sh}`, which create the
+  directory and save there (overridable via `RECAMERA_TMPDIR`, or a full path via
+  `RECAMERA_PHOTO`). The capture helper's image markdown now points at the new
+  path too.
+- Skill `version` 2.1 → 2.2.
+
 ## [2.1] - 2026-06-04
 
 Hardening pass driven by real-world OpenClaw agent testing of the 2.0 skill.

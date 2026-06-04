@@ -3,7 +3,7 @@ name: recamera-gimbal
 description: Control a reCamera Gimbal edge AI camera. Supports gimbal rotation, LED control, audio recording/playback, and visual frame capture and analysis. Invoke this skill when the user asks to look around, find someone, identify an object, or take a photo.
 metadata:
   author: HanJammer (fork of seeed)
-  version: "2.1"
+  version: "2.2"
 allowed-tools: Exec
 ---
 
@@ -68,15 +68,23 @@ Bootstrap steps (Linux host shown; on Windows use the equivalent paths under `$e
 2. Only use Exec to run the specific commands provided below. Do not invent your own interfaces.
    * **Exception:** the SSH bootstrap commands in "SSH Bootstrap For LED/Audio" above are allowed, but only to set up the passwordless SSH that LED/audio require.
 
+# Workspace Artifacts
+Keep camera output out of the workspace root. Use this per-session scratch directory for photos, sweep captures, JSON responses, and other temporary gimbal artifacts:
+
+* Linux: `$HOME/.openclaw/workspace/tmp/recamera-gimbal/`
+* Windows: `%USERPROFILE%\.openclaw\workspace\tmp\recamera-gimbal\`
+
+Create the directory before saving files. Do not write `gimbal_*`, `latest_photo*`, audio captures, or sweep outputs directly into the workspace root.
+
 # Device Capabilities & Operating Guide
 
 ## 1. Vision & Capture
 When the user asks to "look", "find someone", "identify", or "take a photo", follow these steps:
-* **Step 1 (Get the frame)**: Use Exec to fetch the latest frame.
-  * Windows: `Invoke-WebRequest -Uri "http://<DEVICE_IP>:1880/api/photo" -Headers @{"Cache-Control" = "no-cache"} -OutFile "C:\Users\seeed\.openclaw\workspace\latest_photo.jpg"`
-  * Linux: `curl -fsS -H "Cache-Control: no-cache" "http://<DEVICE_IP>:1880/api/photo" -o "$HOME/.openclaw/workspace/latest_photo.jpg"`
-  * (Either host can also run the bundled helper: `capture_photo.ps1` / `capture_photo.sh`.)
-* **Step 2 (Analyze)**: Use your Vision/Image tool to read and carefully analyze the saved `latest_photo.jpg`.
+* **Step 1 (Get the frame)**: Use Exec to fetch the latest frame into the scratch directory.
+  * Windows: `New-Item -ItemType Directory -Force "$env:USERPROFILE\.openclaw\workspace\tmp\recamera-gimbal" | Out-Null; Invoke-WebRequest -Uri "http://<DEVICE_IP>:1880/api/photo" -Headers @{"Cache-Control" = "no-cache"} -OutFile "$env:USERPROFILE\.openclaw\workspace\tmp\recamera-gimbal\latest_photo.jpg"`
+  * Linux: `mkdir -p "$HOME/.openclaw/workspace/tmp/recamera-gimbal" && curl -fsS -H "Cache-Control: no-cache" "http://<DEVICE_IP>:1880/api/photo" -o "$HOME/.openclaw/workspace/tmp/recamera-gimbal/latest_photo.jpg"`
+  * (Either host can also run the bundled helper: `capture_photo.ps1` / `capture_photo.sh`, which save to the same scratch directory.)
+* **Step 2 (Analyze)**: Use your Vision/Image tool to read and carefully analyze the saved `tmp/recamera-gimbal/latest_photo.jpg`.
 * **Step 3 (Reply — VERY IMPORTANT!)**: Your final reply to the user **must output the image tag in exactly the format below**. Do not change any punctuation!
 
 Output format:
